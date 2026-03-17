@@ -68,7 +68,7 @@ export default function App() {
 
   const user = useMemo(() => {
     if (!session) return null;
-    return users.find(u => u.id === session.userId) ?? null;
+    return users.find(u => u.id === session.userId) ?? session;
   }, [session, users]);
 
   // Division scoping
@@ -247,8 +247,8 @@ export default function App() {
 
   if (loading) return <div className="min-h-screen bg-slate-50 flex items-center justify-center font-bold text-slate-300">INITIALIZING AMS...</div>;
 
-  if (!user) {
-    return <Login onSuccess={(u) => onLogin({ userId: u.id, role: u.role })} />;
+  if (!user && !session) {
+    return <Login onSuccess={onLogin} />;
   }
 
   const tabs = tabsForUser(user);
