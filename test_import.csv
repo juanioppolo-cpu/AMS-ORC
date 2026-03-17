@@ -1,0 +1,3 @@
+AthleteID,Date,sleepHours,sleepQuality,soreness,stress,notes
+u_ath_001,2024-02-12,8,4,3,2,Imported valid data 1
+u_ath_002,2024-02-12,7,5,2,1,Imported valid data 2
