@@ -68,6 +68,7 @@ export default function AdminPortal({ users, setUsers }) {
                 divisions: draft.divisions ?? [],
                 permissions: draft.permissions ?? {},
                 external_ids: draft.externalIds ?? draft.external_ids ?? {},
+                password: draft.newPassword || null,
             });
             const next = users.map(u => u.id === draft.id ? { ...u, ...draft } : u);
             setUsers(next);
@@ -355,6 +356,11 @@ export default function AdminPortal({ users, setUsers }) {
                             <div>
                                 <div className="small" style={{ fontWeight: 800, marginBottom: '4px' }}>Photo URL</div>
                                 <input className="input" placeholder="https://example.com/photo.jpg" value={draft.photoUrl || ''} onChange={(e) => setDraft({ ...draft, photoUrl: e.target.value })} style={{ width: "100%" }} />
+                            </div>
+
+                            <div>
+                                <div className="small" style={{ fontWeight: 800, marginBottom: '4px' }}>New Password (leave blank to keep current)</div>
+                                <input className="input" type="password" placeholder="••••••••" value={draft.newPassword || ''} onChange={(e) => setDraft({ ...draft, newPassword: e.target.value })} style={{ width: "100%" }} />
                             </div>
 
                             <div className="row">

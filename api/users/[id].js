@@ -25,15 +25,22 @@ export default async function handler(req, res) {
 
   // PUT — update user
   if (req.method === 'PUT') {
-    const { name, email, role, active, photo_url, athlete_id, divisions, permissions, external_ids } = req.body;
+    const { name, email, role, active, photo_url, athlete_id, divisions, permissions, external_ids, password } = req.body;
 
     try {
+      let password_hash = null;
+      if (password) {
+        const bcrypt = await import('bcryptjs');
+        password_hash = await bcrypt.default.hash(password, 10);
+      }
+
       const rows = await sql`
         UPDATE profiles SET
           name = COALESCE(${name}, name),
           email = COALESCE(${email?.toLowerCase().trim()}, email),
           role = COALESCE(${role}, role),
           active = COALESCE(${active}, active),
+          password_hash = COALESCE(${password_hash}, password_hash),
           photo_url = COALESCE(${photo_url}, photo_url),
           athlete_id = COALESCE(${athlete_id}, athlete_id),
           divisions = COALESCE(${JSON.stringify(divisions ?? null)}::jsonb, divisions),
