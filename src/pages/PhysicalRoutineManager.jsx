@@ -3,7 +3,7 @@ import { EXERCISES } from "../mock/exercises";
 import RoutineDetailView from "../components/RoutineDetailView";
 import { MockAthletes } from "../mock/athletes";
 import { DIVISIONS_CONFIG } from "../mock/divisions";
-import { supabase } from "../lib/supabase";
+import { api } from "../lib/api";
 
 // Helper to get week days
 const getWeekDays = (startDate) => {
@@ -45,20 +45,22 @@ export default function PhysicalRoutineManager({ onBack }) {
 
     useEffect(() => {
         const fetchRoutines = async () => {
-            const { data, error } = await supabase.from("routines").select("*");
-            if (error) {
-                console.error("Error fetching routines:", error);
-            } else if (data) {
-                // Map DB schema names to component state names if needed
-                const mapped = data.map(r => ({
-                    id: r.id,
-                    name: r.name,
-                    scheduledDate: r.scheduled_date,
-                    assignedTo: { type: r.assigned_to_type, id: r.assigned_to_id, name: r.assigned_to_id }, // Name requires a join, for now ID is fine for demo
-                    blocks: r.blocks || [],
-                    createdAt: r.created_at
-                }));
-                setRoutines(mapped);
+            try {
+                const data = await api.getRoutines();
+                if (data) {
+                    // Map DB schema names to component state names if needed
+                    const mapped = data.map(r => ({
+                        id: r.id,
+                        name: r.name,
+                        scheduledDate: r.scheduled_date,
+                        assignedTo: { type: r.assigned_to_type, id: r.assigned_to_id, name: r.assigned_to_id },
+                        blocks: r.blocks || [],
+                        createdAt: r.created_at
+                    }));
+                    setRoutines(mapped);
+                }
+            } catch (err) {
+                console.error("Error fetching routines:", err);
             }
             setIsLoading(false);
         };
@@ -149,29 +151,23 @@ export default function PhysicalRoutineManager({ onBack }) {
             blocks: routineForm.blocks
         };
 
-        const { data, error } = await supabase
-            .from("routines")
-            .insert(newR)
-            .select()
-            .single();
+        try {
+            const data = await api.createRoutine(newR);
+            const mappedR = {
+                id: data.id,
+                name: data.name,
+                scheduledDate: data.scheduled_date,
+                assignedTo: { type: data.assigned_to_type, id: data.assigned_to_id, name: data.assigned_to_id },
+                blocks: data.blocks || [],
+                createdAt: data.created_at
+            };
 
-        if (error) {
-            console.error("Error saving routine:", error);
-            alert("Hubo un error al guardar la rutina.");
-            return;
+            setRoutines([...routines, mappedR]);
+            setShowRoutineModal(false);
+        } catch (err) {
+            console.error("Error saving routine:", err);
+            alert("Hubo un error al guardar la rutina: " + err.message);
         }
-
-        const mappedR = {
-            id: data.id,
-            name: data.name,
-            scheduledDate: data.scheduled_date,
-            assignedTo: { type: data.assigned_to_type, id: data.assigned_to_id, name: data.assigned_to_id },
-            blocks: data.blocks || [],
-            createdAt: data.created_at
-        };
-
-        setRoutines([...routines, mappedR]);
-        setShowRoutineModal(false);
     };
 
     // ... Block/Set Logic (Same as before) ...

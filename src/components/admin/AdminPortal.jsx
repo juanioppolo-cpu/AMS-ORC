@@ -4,6 +4,7 @@ import Table from "../Table";
 import { DIVISIONS } from "../../app/divisions";
 import { MODULES, defaultPermissionsForRole } from "../../app/permissions";
 import Papa from "papaparse";
+import { api } from "../../lib/api";
 
 function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
 
@@ -54,11 +55,26 @@ export default function AdminPortal({ users, setUsers }) {
         { key: "active", label: "Status", render: (r) => <span className={`badge ${r.active ? 'green' : 'red'}`}>{r.active ? "ACTIVE" : "INACTIVE"}</span> },
     ];
 
-    const save = () => {
+    const save = async () => {
         if (!draft) return;
-        const next = users.map(u => u.id === draft.id ? draft : u);
-        setUsers(next);
-        alert("User configurations saved to persistence.");
+        try {
+            await api.updateUser(draft.id, {
+                name: draft.name,
+                email: draft.email,
+                role: draft.role,
+                active: draft.active,
+                photo_url: draft.photoUrl ?? draft.photo_url ?? null,
+                athlete_id: draft.athleteId ?? draft.athlete_id ?? null,
+                divisions: draft.divisions ?? [],
+                permissions: draft.permissions ?? {},
+                external_ids: draft.externalIds ?? draft.external_ids ?? {},
+            });
+            const next = users.map(u => u.id === draft.id ? { ...u, ...draft } : u);
+            setUsers(next);
+            alert("User saved to Neon.");
+        } catch (err) {
+            alert("Error saving user: " + err.message);
+        }
     };
 
     const toggleDivision = (d) => {
@@ -109,28 +125,37 @@ export default function AdminPortal({ users, setUsers }) {
         setDraft(next);
     };
 
-    const newUser = () => {
+    const newUser = async () => {
         const id = "u_" + (crypto.randomUUID ? crypto.randomUUID().slice(0, 8) : Date.now());
         const u = {
             id,
             name: "New User",
             email: `${id}@orc.com`,
-            password: "1234",
             role: "Coach",
             divisions: ["M19"],
             permissions: defaultPermissionsForRole("Coach"),
             active: true,
         };
-        setUsers([u, ...users]);
-        setSelectedId(id);
+        try {
+            const created = await api.createUser({ ...u, password: 'password123' });
+            setUsers([{ ...u, ...created }, ...users]);
+            setSelectedId(created.id || id);
+        } catch (err) {
+            alert("Error creating user: " + err.message);
+        }
     };
 
-    const deleteUser = () => {
+    const deleteUser = async () => {
         if (!draft) return;
         if (!confirm(`Are you sure you want to delete ${draft.name}?`)) return;
-        const next = users.filter(u => u.id !== draft.id);
-        setUsers(next);
-        setSelectedId(next[0]?.id || null);
+        try {
+            await api.deleteUser(draft.id);
+            const next = users.filter(u => u.id !== draft.id);
+            setUsers(next);
+            setSelectedId(next[0]?.id || null);
+        } catch (err) {
+            alert("Error deleting user: " + err.message);
+        }
     };
 
     const handleFileUpload = (e) => {

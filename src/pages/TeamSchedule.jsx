@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { EVENTS } from "../mock/events";
 import { DIVISIONS_CONFIG } from "../mock/divisions";
 import RoutineDetailView from "../components/RoutineDetailView";
-import { supabase } from "../lib/supabase";
+import { api } from "../lib/api";
 
 // --- DATE HELPERS ---
 const formatDate = (date) => date.toISOString().split('T')[0];
@@ -112,20 +112,22 @@ export default function TeamSchedule({ onBack }) {
 
     useEffect(() => {
         const fetchRoutines = async () => {
-            const { data, error } = await supabase.from("routines").select("*");
-            if (error) {
-                console.error("Error fetching routines:", error);
-            } else if (data) {
-                // Map db names to camelCase for the frontend component
-                const mapped = data.map(r => ({
-                    id: r.id,
-                    name: r.name,
-                    scheduledDate: r.scheduled_date,
-                    assignedTo: { type: r.assigned_to_type, id: r.assigned_to_id, name: r.assigned_to_id },
-                    blocks: r.blocks || [],
-                    createdAt: r.created_at
-                }));
-                setRoutines(mapped);
+            try {
+                const data = await api.getRoutines();
+                if (data) {
+                    // Map db names to camelCase for the frontend component
+                    const mapped = data.map(r => ({
+                        id: r.id,
+                        name: r.name,
+                        scheduledDate: r.scheduled_date,
+                        assignedTo: { type: r.assigned_to_type, id: r.assigned_to_id, name: r.assigned_to_id },
+                        blocks: r.blocks || [],
+                        createdAt: r.created_at
+                    }));
+                    setRoutines(mapped);
+                }
+            } catch (err) {
+                console.error("Error fetching routines:", err);
             }
         };
         fetchRoutines();

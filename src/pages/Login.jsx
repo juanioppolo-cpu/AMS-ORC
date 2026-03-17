@@ -3,16 +3,24 @@ import { login } from "../app/auth";
 import logo from "../assets/logo-orc.png";
 import Card from "../components/Card";
 
-export default function Login({ users = [], onSuccess }) {
-    const [email, setEmail] = useState(users?.[0]?.email || "");
-    const [password, setPassword] = useState("1234");
+export default function Login({ onSuccess }) {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
-    const submit = (e) => {
+    const submit = async (e) => {
         e.preventDefault();
-        const user = login(email, password);
-        if (!user) return setError("Invalid credentials or inactive user.");
-        onSuccess(user);
+        setError("");
+        setLoading(true);
+        try {
+            const user = await login(email, password);
+            onSuccess(user);
+        } catch (err) {
+            setError(err.message || "Invalid credentials or inactive user.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -55,13 +63,13 @@ export default function Login({ users = [], onSuccess }) {
 
                         {error && <div className="badge red" style={{ justifyContent: 'center', padding: '8px' }}>{error}</div>}
 
-                        <button className="btn primary" style={{ width: '100%', height: '44px', fontWeight: 800 }}>
-                            AUTHORIZE ACCESS
+                        <button className="btn primary" style={{ width: '100%', height: '44px', fontWeight: 800 }} disabled={loading}>
+                            {loading ? 'AUTHENTICATING...' : 'AUTHORIZE ACCESS'}
                         </button>
 
                         <div className="hr" />
                         <div className="small" style={{ textAlign: 'center', fontStyle: 'italic' }}>
-                            Tip: All demo users use password <b>1234</b>.
+                            Tip: Use your assigned credentials.
                         </div>
                     </form>
                 </Card>

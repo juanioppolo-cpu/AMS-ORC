@@ -5,7 +5,7 @@ import { MemoryRouter, Routes, Route, Navigate } from "react-router-dom";
 import { DIVISIONS } from "./app/divisions";
 
 // Remote Database
-import { supabase } from "./lib/supabase";
+import { api } from "./lib/api";
 
 // Services & Routing
 import { tabsForUser, TAB_KEYS } from "./app/routes";
@@ -88,14 +88,16 @@ export default function App() {
     const ftData = loadFormTemplates();
     let fsData = loadFormSubmissions();
 
-    // Fetch real users from Supabase
+    // Fetch real users from Neon via API
     async function fetchUsers() {
-      const { data, error } = await supabase.from("profiles").select("*");
-      if (error) {
-        console.error("Error fetching users:", error);
-      } else if (data && data.length > 0) {
-        saveUsers(data);
-        setUsers(data);
+      try {
+        const data = await api.getUsers();
+        if (data && data.length > 0) {
+          saveUsers(data);
+          setUsers(data);
+        }
+      } catch (err) {
+        console.error("Error fetching users:", err);
       }
     }
 
@@ -246,7 +248,7 @@ export default function App() {
   if (loading) return <div className="min-h-screen bg-slate-50 flex items-center justify-center font-bold text-slate-300">INITIALIZING AMS...</div>;
 
   if (!user) {
-    return <Login users={users} onSuccess={(u) => onLogin({ userId: u.id, role: u.role })} />;
+    return <Login onSuccess={(u) => onLogin({ userId: u.id, role: u.role })} />;
   }
 
   const tabs = tabsForUser(user);
